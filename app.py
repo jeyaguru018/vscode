@@ -62,17 +62,8 @@ def save_user(email, name, password_hash):
     })
 
 def authenticate(email, password):
-    doc_ref = db.collection("users").document(email)
-    doc = doc_ref.get()
-
-    if not doc.exists:
-        return "NO_USER"
-
-    user_data = doc.to_dict()
-    if user_data["password_hash"] != hash_password(password):
-        return "WRONG_PASSWORD"
-
-    return "SUCCESS"
+    doc = db.collection("users").document(email).get()
+    return doc.exists and doc.to_dict()["password_hash"] == hash_password(password)
 
 def append_prediction(email, hb, green, red, ir, skin):
     db.collection("predictions").add({
@@ -274,4 +265,5 @@ if not df.empty:
     st.dataframe(df.sort_values("timestamp", ascending=False))
 else:
     st.info("No readings yet")
+
 
