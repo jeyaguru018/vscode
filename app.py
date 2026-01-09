@@ -62,8 +62,17 @@ def save_user(email, name, password_hash):
     })
 
 def authenticate(email, password):
-    doc = db.collection("users").document(email).get()
-    return doc.exists and doc.to_dict()["password_hash"] == hash_password(password)
+    doc_ref = db.collection("users").document(email)
+    doc = doc_ref.get()
+
+    if not doc.exists:
+        return "NO_USER"
+
+    user_data = doc.to_dict()
+    if user_data["password_hash"] != hash_password(password):
+        return "WRONG_PASSWORD"
+
+    return "SUCCESS"
 
 def append_prediction(email, hb, green, red, ir, skin):
     db.collection("predictions").add({
@@ -208,6 +217,21 @@ with c2:
 # ---------------------------------------------------------
 # RUN ML
 # ---------------------------------------------------------
+if st.button(t("login")):
+    auth_result = authenticate(email, password)
+
+    if auth_result == "NO_USER":
+        st.error("❌ Account does not exist. Please register first.")
+
+    elif auth_result == "WRONG_PASSWORD":
+        st.error("❌ Incorrect password. Please try again.")
+
+    elif auth_result == "SUCCESS":
+        st.session_state['user'] = email
+        st.session_state['page'] = 'dashboard'
+        st.success("✅ Login successful")
+        st.rerun()
+
 if st.button(t("run")):
     payload = {
         "input_data": {
@@ -250,3 +274,4 @@ if not df.empty:
     st.dataframe(df.sort_values("timestamp", ascending=False))
 else:
     st.info("No readings yet")
+
